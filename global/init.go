@@ -1,33 +1,34 @@
-package server
+package global
 
 import (
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
-
-	"github.com/Xihy-xch/tcp-chatroom/internal/logic"
+	"sync"
 )
 
-func RegisterHandle() {
-	inferRootDir()
-
-	go logic.Broadcaster.Start()
-
-	http.HandleFunc("/", homeHandleFunc)
-	http.HandleFunc("/ws", WebSocketHandleFunc)
+func init() {
+	Init()
 }
 
-var rootDir string
+var RootDir string
+
+var once = new(sync.Once)
+
+func Init() {
+	once.Do(func() {
+		inferRootDir()
+		initConfig()
+	})
+}
 
 func inferRootDir() {
 	cwd, err := os.Getwd()
 	if err != nil {
-		log.Fatal("os.Getwd err: ", err)
+		log.Fatal(err)
 	}
 
 	var infer func(d string) string
-
 	infer = func(d string) string {
 		if exists(d + "/template") {
 			return d
@@ -36,7 +37,7 @@ func inferRootDir() {
 		return infer(filepath.Dir(d))
 	}
 
-	rootDir = infer(cwd)
+	RootDir = infer(cwd)
 }
 
 func exists(filename string) bool {
